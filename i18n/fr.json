@@ -1,0 +1,9 @@
+{
+  "search.placeholder": "Ouvrir un fichier…",
+  "list.loading": "Lecture des fichiers…",
+  "list.noMatch": "Aucun fichier pour « %1 »",
+  "count.none": "Aucun fichier",
+  "count.partial": "%1 sur %2 fichiers",
+  "count.files": { "one": "%1 fichier", "other": "%1 fichiers" },
+  "size.units": "o,Ko,Mo,Go,To"
+}

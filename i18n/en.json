@@ -1,0 +1,9 @@
+{
+  "search.placeholder": "Open a file…",
+  "list.loading": "Reading files…",
+  "list.noMatch": "No file matches “%1”",
+  "count.none": "No file",
+  "count.partial": "%1 of %2 files",
+  "count.files": { "one": "%1 file", "other": "%1 files" },
+  "size.units": "B,kB,MB,GB,TB"
+}

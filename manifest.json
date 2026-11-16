@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "swald.files",
+  "name": "Open a file",
+  "version": "1.0.0",
+  "author": "Sébastien Wald",
+  "description": "Document-first launcher: search every file in your home folder by name and open it, with previews for images (HEIC included), PDFs, videos and audio",
+  "kinds": [
+    "overlay"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "OpenFile.qml"
+  }
+}
