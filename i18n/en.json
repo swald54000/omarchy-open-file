@@ -5,5 +5,6 @@
   "count.none": "No file",
   "count.partial": "%1 of %2 files",
   "count.files": { "one": "%1 file", "other": "%1 files" },
+  "hint.keys": "Enter: open  ·  Ctrl+Enter: open its folder",
   "size.units": "B,kB,MB,GB,TB"
 }

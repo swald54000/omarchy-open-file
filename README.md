@@ -2,7 +2,7 @@
 
 A search panel for [Omarchy](https://omarchy.org) that starts from the document instead of
 the application: type a few letters of a file name, see a preview, press Enter, and the
-file opens in its default application.
+file opens in its default application. Ctrl+Enter opens its folder in Files instead.
 
 ![The panel: results on the left, preview on the right](preview.png)
 
@@ -33,6 +33,7 @@ file opens in its default application.
 | letters | filter |
 | Up / Down, Page Up / Page Down | move in the list |
 | Enter, or a click | open the file |
+| Ctrl+Enter or Shift+Enter | open the file's folder in Files instead |
 | Backspace, Ctrl+Backspace, Ctrl+U | edit the search |
 | Escape | clear the search, then close |
 

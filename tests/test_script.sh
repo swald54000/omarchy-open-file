@@ -77,6 +77,24 @@ else
   echo "saut apercu : HEIC (heif-enc absent)"
 fi
 
+# Ouverture : faux xdg-open et notify-send qui notent leurs arguments.
+faux="$maison/.faux"
+mkdir -p "$faux"
+printf '#!/bin/bash\nprintf "%%s\\n" "$@" >>"$HOME/.faux/xdg-open.log"\n' >"$faux/xdg-open"
+printf '#!/bin/bash\nprintf "%%s\\n" "$*" >>"$HOME/.faux/notify.log"\n' >"$faux/notify-send"
+chmod +x "$faux/xdg-open" "$faux/notify-send"
+
+PATH="$faux:$PATH" "$script" --open "$maison/Documents/trois octets.txt"
+verifier "open : le fichier est passé à xdg-open" test "$(tail -1 "$faux/xdg-open.log")" = "$maison/Documents/trois octets.txt"
+PATH="$faux:$PATH" "$script" --reveal "$maison/Documents/trois octets.txt"
+verifier "reveal : c'est le dossier du fichier qui est ouvert" test "$(tail -1 "$faux/xdg-open.log")" = "$maison/Documents"
+PATH="$faux:$PATH" "$script" --reveal "$maison/racine.md"
+verifier "reveal : fichier à la racine → dossier personnel" test "$(tail -1 "$faux/xdg-open.log")" = "$maison"
+lignes=$(wc -l <"$faux/xdg-open.log")
+PATH="$faux:$PATH" "$script" --reveal "$maison/disparu/fichier.txt" >/dev/null 2>&1
+verifier "reveal : dossier disparu → code d'erreur" test $? -ne 0
+verifier "reveal : dossier disparu → rien d'ouvert, une notification" test "$(wc -l <"$faux/xdg-open.log")" -eq "$lignes" -a -s "$faux/notify.log"
+
 "$script" --inconnu >/dev/null 2>&1
 verifier "option inconnue → code 2" test $? -eq 2
 "$script" >/dev/null 2>&1

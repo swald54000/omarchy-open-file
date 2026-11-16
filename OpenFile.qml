@@ -130,6 +130,14 @@ Item {
     Quickshell.execDetached(["bash", root.script, "--open", chemin])
   }
 
+  // Ouvre le gestionnaire de fichiers dans le dossier du fichier, sans ouvrir le fichier.
+  function revealIndex(index) {
+    if (index < 0 || index >= root.lignes.length) return
+    var chemin = Recherche.chemin(root.lignes[index], root.maison)
+    root.dismiss()
+    Quickshell.execDetached(["bash", root.script, "--reveal", chemin])
+  }
+
   onCheminSelectionChanged: demanderApercu()
   // Le panneau reste chargé une fois fermé : la lecture ne doit pas continuer derrière.
   onOpenedChanged: if (!opened) demanderApercu()
@@ -286,7 +294,8 @@ Item {
             root.select(event.key === Qt.Key_PageUp ? -page : page)
             event.accepted = true
           } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            root.activateIndex(root.selectedIndex)
+            if (event.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) root.revealIndex(root.selectedIndex)
+            else root.activateIndex(root.selectedIndex)
             event.accepted = true
           } else if (event.text && event.text.length === 1 && event.text.charCodeAt(0) >= 32 && event.text.charCodeAt(0) !== 127) {
             root.setFilter(root.filterText + event.text)
@@ -454,6 +463,15 @@ Item {
                 text: root.selection ? root.selection.dossier : ""
                 opacity: 0.62
                 horizontalAlignment: Text.AlignHCenter
+              }
+
+              Texte {
+                width: parent.width
+                topPadding: Style.space(6)
+                text: strings.t("hint.keys")
+                opacity: 0.4
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
               }
             }
 

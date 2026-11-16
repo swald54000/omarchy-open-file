@@ -9,6 +9,7 @@
 #   open-file.sh --preview <fichier> affiche le chemin d'une miniature PNG (image, PDF,
 #                                    vidéo), ou rien si le fichier n'en a pas
 #   open-file.sh --open <fichier>    ouvre le fichier avec son application
+#   open-file.sh --reveal <fichier>  ouvre le dossier du fichier dans le gestionnaire de fichiers
 
 set -euo pipefail
 
@@ -111,6 +112,17 @@ ouvrir() {
   xdg-open "$fichier" || notify-send "Open a file" "No application could open: $fichier"
 }
 
+# Ouvre le dossier qui contient $1 avec l'application des dossiers (Files sous Omarchy).
+montrer() {
+  local dossier
+  dossier=$(dirname -- "$1")
+  if [[ ! -d $dossier ]]; then
+    notify-send "Open a file" "Not found: $dossier"
+    return 1
+  fi
+  xdg-open "$dossier" || notify-send "Open a file" "No application could open: $dossier"
+}
+
 case ${1:-} in
   --list)
     liste
@@ -121,8 +133,11 @@ case ${1:-} in
   --open)
     ouvrir "${2:?missing file}"
     ;;
+  --reveal)
+    montrer "${2:?missing file}"
+    ;;
   *)
-    echo "Usage: open-file.sh --list | --preview <file> | --open <file>" >&2
+    echo "Usage: open-file.sh --list | --preview <file> | --open <file> | --reveal <file>" >&2
     exit 2
     ;;
 esac

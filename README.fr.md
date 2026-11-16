@@ -2,7 +2,8 @@
 
 Un panneau de recherche pour [Omarchy](https://omarchy.org) qui part du document plutôt
 que de l'application : tapez quelques lettres du nom d'un fichier, regardez l'aperçu,
-appuyez sur Entrée, et le fichier s'ouvre dans son application par défaut.
+appuyez sur Entrée, et le fichier s'ouvre dans son application par défaut. Ctrl+Entrée
+ouvre à la place son dossier dans Files.
 
 ![Le panneau : résultats à gauche, aperçu à droite](preview.png)
 
@@ -34,6 +35,7 @@ appuyez sur Entrée, et le fichier s'ouvre dans son application par défaut.
 | lettres | filtrer |
 | Haut / Bas, Page préc. / Page suiv. | parcourir la liste |
 | Entrée, ou un clic | ouvrir le fichier |
+| Ctrl+Entrée ou Maj+Entrée | ouvrir plutôt le dossier du fichier dans Files |
 | Retour arrière, Ctrl+Retour arrière, Ctrl+U | corriger la recherche |
 | Échap | effacer la recherche, puis fermer |
 
