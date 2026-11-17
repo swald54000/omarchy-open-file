@@ -467,13 +467,28 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
               }
 
+              // Raccourcis : sur une ligne si elle tient dans le volet, sinon un par ligne.
+              // Rien n'est coupé, quelles que soient la résolution et la langue.
               Texte {
+                id: raccourcis
+                readonly property var liste: Recherche.seLit(root.genreSelection)
+                  ? [strings.t("hint.open"), strings.t("hint.reveal"), strings.t("hint.play")]
+                  : [strings.t("hint.open"), strings.t("hint.reveal")]
+
                 width: parent.width
                 topPadding: Style.space(6)
-                text: Recherche.seLit(root.genreSelection) ? strings.t("hint.keysPlayable") : strings.t("hint.keys")
-                opacity: 0.4
+                text: mesureRaccourcis.implicitWidth <= width ? mesureRaccourcis.text : liste.join("\n")
+                opacity: 0.62
                 horizontalAlignment: Text.AlignHCenter
-                elide: Text.ElideRight
+                elide: Text.ElideNone
+                wrapMode: Text.WordWrap
+              }
+
+              Texte {
+                id: mesureRaccourcis
+                visible: false
+                height: 0
+                text: raccourcis.liste.join("  ·  ")
               }
             }
 
