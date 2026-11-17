@@ -24,8 +24,8 @@ ouvre à la place son dossier dans Files.
   - vidéos lues sans le son, en boucle ;
   - fichiers audio joués (pré-écoute), avec position et durée ;
   - tout fichier : nom, taille, date et dossier.
-- Une vidéo ou un morceau ne démarre qu'après 0,4 s sur la même ligne, et s'arrête dès
-  qu'on passe à autre chose ou qu'on ferme le panneau.
+- Une vidéo ou un morceau ne démarre que sur Tab, et s'arrête dès qu'on appuie de nouveau
+  sur Tab, qu'on passe à autre chose ou qu'on ferme le panneau.
 - Suit le thème d'Omarchy (couleurs du menu) et sa langue (anglais et français fournis).
 
 ## Touches
@@ -36,6 +36,7 @@ ouvre à la place son dossier dans Files.
 | Haut / Bas, Page préc. / Page suiv. | parcourir la liste |
 | Entrée, ou un clic | ouvrir le fichier |
 | Ctrl+Entrée ou Maj+Entrée | ouvrir plutôt le dossier du fichier dans Files |
+| Tab | lire ou arrêter la vidéo ou le morceau sélectionné |
 | Retour arrière, Ctrl+Retour arrière, Ctrl+U | corriger la recherche |
 | Échap | effacer la recherche, puis fermer |
 
@@ -45,9 +46,11 @@ ouvre à la place son dossier dans Files.
 - Pour les aperçus, tout est facultatif — un outil absent, c'est seulement une miniature
   en moins :
   - `libvips` (`vipsthumbnail`) ou `imagemagick` pour les images, et `libheif` pour
-    HEIC/AVIF ;
+    HEIC/AVIF (le JPEG XL demande `imagemagick`) ;
+  - `librsvg` (`rsvg-convert`) pour les SVG ;
   - `poppler` (`pdftoppm`) pour les PDF ;
   - `ffmpegthumbnailer` pour les miniatures de vidéos ;
+  - `bubblewrap` (`bwrap`) pour enfermer les outils de miniature ;
   - `qt6-multimedia` et `qt6-multimedia-ffmpeg` pour lire vidéos et sons dans le panneau.
 
 ## Installation
@@ -77,7 +80,17 @@ Games
 Sources/linux
 ```
 
-Les miniatures sont gardées dans `~/.cache/swald.files` et supprimées après 30 jours.
+Les miniatures sont gardées dans `~/.cache/swald.files`, lisibles par vous seul, et
+supprimées après 30 jours.
+
+Les aperçus sont faits sur des fichiers de toute origine dès qu'une ligne est sélectionnée :
+les outils d'image sont donc bridés. ImageMagick suit `magick/policy.xml` (formats d'image
+attendus seulement, aucun programme externe comme Ghostscript) et libvips tourne sans ses
+décodeurs peu sûrs. Si `bwrap` est installé, chaque outil de miniature tourne en plus dans
+un bac à sable : pas de réseau, et du dossier personnel seulement le fichier aperçu (en
+lecture) et le cache des miniatures. Sans lui, les outils tournent sans bac à sable. La
+vidéo et l'audio sont lus par le shell lui-même, hors de tout bac à sable : c'est pourquoi
+rien n'est lu avant un appui sur Tab.
 
 ## Désinstallation
 

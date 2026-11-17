@@ -37,8 +37,7 @@ Item {
   property string apercuSource: ""
   property string apercuPour: ""
   property bool apercuEnAttente: false
-  // Vidéo ou morceau lu dans le volet d'aperçu : vide tant que la sélection n'est pas
-  // restée en place.
+  // Vidéo ou morceau lu dans le volet d'aperçu : vide tant que Tab ne l'a pas demandé.
   property string lecturePour: ""
   property string lectureGenre: ""
   readonly property bool videoEnLecture: genreSelection === "video" && lecteur.item !== null && lecteur.item.enLecture
@@ -147,11 +146,21 @@ Item {
   function demanderApercu() {
     root.apercuSource = ""
     root.lecturePour = ""
-    delaiLecture.stop()
     delaiApercu.stop()
     if (!root.opened || !root.cheminSelection) return
     if (Recherche.aMiniature(root.genreSelection)) delaiApercu.restart()
-    if (Recherche.seLit(root.genreSelection)) delaiLecture.restart()
+  }
+
+  // Lance ou arrête la lecture de la vidéo ou du morceau sélectionné. Rien n'est lu sans
+  // cette demande : le lecteur tourne dans le shell lui-même, hors de tout bac à sable, et
+  // ne doit pas décoder un fichier que l'utilisateur n'a fait que survoler.
+  function basculerLecture() {
+    if (root.lecturePour !== "") {
+      root.lecturePour = ""
+    } else if (root.opened && root.cheminSelection && Recherche.seLit(root.genreSelection)) {
+      root.lectureGenre = root.genreSelection
+      root.lecturePour = root.cheminSelection
+    }
   }
 
   function adresse(chemin) {
@@ -223,17 +232,6 @@ Item {
     onTriggered: root.lancerApercu()
   }
 
-  // Une vidéo ou un morceau ne démarre que si la sélection s'y arrête : parcourir la liste
-  // ne lance rien. La miniature d'une vidéo sert d'attente.
-  Timer {
-    id: delaiLecture
-    interval: 400
-    onTriggered: if (root.opened && Recherche.seLit(root.genreSelection)) {
-      root.lectureGenre = root.genreSelection
-      root.lecturePour = root.cheminSelection
-    }
-  }
-
   component Texte: Text {
     textFormat: Text.PlainText
     color: root.foreground
@@ -279,6 +277,9 @@ Item {
           if (event.key === Qt.Key_Escape) {
             if (root.filterText) root.setFilter("")
             else root.dismiss()
+            event.accepted = true
+          } else if (event.key === Qt.Key_Tab) {
+            root.basculerLecture()
             event.accepted = true
           } else if (Util.editsFilter(event, root.filterText)) {
             root.setFilter(Util.editedFilter(event, root.filterText))
@@ -370,6 +371,7 @@ Item {
 
                 Text {
                   id: icon
+                  textFormat: Text.PlainText
                   anchors.left: parent.left
                   anchors.leftMargin: Style.spacing.md
                   anchors.verticalCenter: parent.verticalCenter
@@ -468,7 +470,7 @@ Item {
               Texte {
                 width: parent.width
                 topPadding: Style.space(6)
-                text: strings.t("hint.keys")
+                text: Recherche.seLit(root.genreSelection) ? strings.t("hint.keysPlayable") : strings.t("hint.keys")
                 opacity: 0.4
                 horizontalAlignment: Text.AlignHCenter
                 elide: Text.ElideRight
@@ -504,6 +506,7 @@ Item {
               Text {
                 anchors.centerIn: parent
                 id: bigIcon
+                textFormat: Text.PlainText
                 visible: !thumbnail.visible && !root.videoEnLecture
                 text: Recherche.icone(root.genreSelection)
                 color: root.foreground

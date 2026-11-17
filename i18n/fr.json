@@ -6,5 +6,6 @@
   "count.partial": "%1 sur %2 fichiers",
   "count.files": { "one": "%1 fichier", "other": "%1 fichiers" },
   "hint.keys": "Entrée : ouvrir  ·  Ctrl+Entrée : ouvrir son dossier",
+  "hint.keysPlayable": "Entrée : ouvrir  ·  Ctrl+Entrée : ouvrir son dossier  ·  Tab : lire",
   "size.units": "o,Ko,Mo,Go,To"
 }

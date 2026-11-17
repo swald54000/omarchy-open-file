@@ -24,8 +24,51 @@ cache="${XDG_CACHE_HOME:-$HOME/.cache}/swald.files"
 cote_miniature=640
 delai_miniature=15
 
+# Les miniatures se font sur des fichiers venus de n'importe où (téléchargements, pièces
+# jointes), dès qu'une ligne est sélectionnée, et les outils décodent d'après le contenu,
+# pas l'extension. ImageMagick (seul ou appelé par vips) suit donc les règles de
+# magick/policy.xml : formats d'image attendus seulement, aucun programme externe.
+export MAGICK_CONFIGURE_PATH
+MAGICK_CONFIGURE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/magick"
+
+# Bac à sable des outils de miniature, préparé par cloisonner ; vide s'il n'y en a pas.
+cloison=()
+
+# Enferme les outils de miniature avec bubblewrap : pas de réseau, le système en lecture
+# seule, et du dossier personnel rien d'autre que le fichier $1 (en lecture) et le cache.
+# Un fichier piégé qui prendrait la main sur un décodeur n'atteint ni les autres fichiers
+# ni l'extérieur. Sans bwrap, ou s'il ne peut pas tourner ici, les outils sont lancés tels
+# quels.
+cloisonner() {
+  local fichier=$1 dossier
+  local essai=(bwrap --unshare-all --die-with-parent --new-session --cap-drop ALL
+    --ro-bind /usr /usr --ro-bind /etc /etc --ro-bind-try /nix /nix
+    --proc /proc --dev /dev --tmpfs /tmp)
+
+  cloison=()
+  command -v bwrap >/dev/null || return 0
+  for dossier in /bin /sbin /lib /lib32 /lib64; do
+    if [[ -L $dossier ]]; then
+      essai+=(--symlink "$(readlink "$dossier")" "$dossier")
+    elif [[ -d $dossier ]]; then
+      essai+=(--ro-bind "$dossier" "$dossier")
+    fi
+  done
+  essai+=(--ro-bind "$MAGICK_CONFIGURE_PATH" "$MAGICK_CONFIGURE_PATH"
+    --ro-bind "$fichier" "$fichier" --bind "$cache" "$cache")
+  if "${essai[@]}" true 2>/dev/null; then
+    cloison=("${essai[@]}")
+  fi
+}
+
+# Lance un outil de miniature dans le bac à sable, avec arrêt forcé s'il ignore le délai.
+borner() {
+  timeout -k 2 "$delai_miniature" "${cloison[@]}" "$@"
+}
+
 liste() {
-  local exclusions=(-name '.*') nom chemin
+  # Un nom contenant un saut de ligne pourrait se faire passer pour une autre entrée.
+  local exclusions=(-name '.*' -o -name $'*\n*') nom chemin
   for nom in "${noms_exclus[@]}"; do
     exclusions+=(-o -name "$nom")
   done
@@ -64,16 +107,23 @@ fabriquer() {
   extension=${extension,,}
 
   case $extension in
-    jpg | jpeg | png | gif | webp | bmp | tif | tiff | svg | heic | heif | avif | jxl)
-      # vipsthumbnail redresse la photo d'après son orientation EXIF.
-      timeout "$delai_miniature" vipsthumbnail "$fichier" -s "${cote_miniature}x${cote_miniature}" -o "$sortie" ||
-        timeout "$delai_miniature" magick "${fichier}[0]" -auto-orient -thumbnail "${cote_miniature}x${cote_miniature}" "$sortie"
+    svg)
+      # rsvg-convert ne lit que du SVG ; à défaut, vips avec tous ses décodeurs.
+      borner rsvg-convert --keep-aspect-ratio -w "$cote_miniature" -h "$cote_miniature" -o "$sortie" -- "$fichier" ||
+        borner vipsthumbnail "$fichier" -s "${cote_miniature}x${cote_miniature}" -o "$sortie"
+      ;;
+    jpg | jpeg | png | gif | webp | bmp | tif | tiff | heic | heif | avif | jxl)
+      # vipsthumbnail redresse la photo d'après son orientation EXIF. VIPS_BLOCK_UNTRUSTED
+      # écarte ses décodeurs peu sûrs (CSV, FITS, PDF, ImageMagick…) ; ce qu'il refuse
+      # alors, le JPEG XL par exemple, revient à ImageMagick.
+      VIPS_BLOCK_UNTRUSTED=1 borner vipsthumbnail "$fichier" -s "${cote_miniature}x${cote_miniature}" -o "$sortie" ||
+        borner magick "${fichier}[0]" -auto-orient -thumbnail "${cote_miniature}x${cote_miniature}" "$sortie"
       ;;
     pdf)
-      timeout "$delai_miniature" pdftoppm -png -singlefile -f 1 -l 1 -scale-to "$cote_miniature" "$fichier" "${sortie%.png}"
+      borner pdftoppm -png -singlefile -f 1 -l 1 -scale-to "$cote_miniature" "$fichier" "${sortie%.png}"
       ;;
     mp4 | mov | mkv | webm | avi | m4v)
-      timeout "$delai_miniature" ffmpegthumbnailer -i "$fichier" -o "$sortie" -s "$cote_miniature"
+      borner ffmpegthumbnailer -i "$fichier" -o "$sortie" -s "$cote_miniature"
       ;;
     *)
       return 1
@@ -86,14 +136,19 @@ apercu() {
   [[ -f $fichier && -r $fichier ]] || return 0
 
   # La clé change avec le contenu : un fichier modifié reçoit une nouvelle miniature.
-  cle=$(stat -c '%n|%Y|%s' -- "$fichier" | sha1sum | cut -d' ' -f1)
+  cle=$(stat -c '%n|%Y|%s' -- "$fichier" | sha256sum | cut -d' ' -f1)
   miniature="$cache/$cle.png"
   if [[ -s $miniature ]]; then
     printf '%s\n' "$miniature"
     return 0
   fi
 
+  # Une miniature montre le contenu du fichier : le cache reste fermé aux autres
+  # utilisateurs, y compris s'il a été créé ouvert par une version précédente.
+  umask 077
   mkdir -p "$cache"
+  chmod 700 "$cache" || return 0
+  cloisonner "$fichier"
   provisoire="$cache/.$cle.$$.png"
   if fabriquer "$fichier" "$provisoire" >/dev/null 2>&1 && [[ -s $provisoire ]]; then
     mv -f "$provisoire" "$miniature"
@@ -103,13 +158,24 @@ apercu() {
   fi
 }
 
+# Le corps d'une notification est lu comme du balisage : un nom de fichier n'y écrit pas
+# de lien ni de mise en forme.
+prevenir() {
+  local texte=$1
+  # Entre guillemets, « & » reste un « & » et non le texte trouvé.
+  texte=${texte//&/"&amp;"}
+  texte=${texte//</"&lt;"}
+  texte=${texte//>/"&gt;"}
+  notify-send "Open a file" "$texte"
+}
+
 ouvrir() {
   local fichier=$1
   if [[ ! -f $fichier ]]; then
-    notify-send "Open a file" "Not found: $fichier"
+    prevenir "Not found: $fichier"
     return 1
   fi
-  xdg-open "$fichier" || notify-send "Open a file" "No application could open: $fichier"
+  xdg-open "$fichier" || prevenir "No application could open: $fichier"
 }
 
 # Ouvre le dossier qui contient $1 avec l'application des dossiers (Files sous Omarchy).
@@ -117,10 +183,10 @@ montrer() {
   local dossier
   dossier=$(dirname -- "$1")
   if [[ ! -d $dossier ]]; then
-    notify-send "Open a file" "Not found: $dossier"
+    prevenir "Not found: $dossier"
     return 1
   fi
-  xdg-open "$dossier" || notify-send "Open a file" "No application could open: $dossier"
+  xdg-open "$dossier" || prevenir "No application could open: $dossier"
 }
 
 case ${1:-} in

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Règles d'ImageMagick pour les miniatures de swald.files (open-file.sh les impose par
+     MAGICK_CONFIGURE_PATH). Un fichier est décodé d'après son contenu, pas son extension :
+     sans ces règles, un PostScript ou un PDF renommé en .jpg lancerait Ghostscript dès que
+     la ligne est sélectionnée. Seuls les formats d'image attendus sont lus, aucun programme
+     externe n'est lancé, et la mémoire comme le temps sont bornés. -->
+<policymap>
+  <policy domain="delegate" rights="none" pattern="*"/>
+  <policy domain="filter" rights="none" pattern="*"/>
+  <policy domain="path" rights="none" pattern="@*"/>
+  <policy domain="coder" rights="none" pattern="*"/>
+  <policy domain="coder" rights="read|write" pattern="{PNG,JPEG,JPG,GIF,WEBP,BMP,TIFF,SVG,HEIC,HEIF,AVIF,JXL}"/>
+  <policy domain="resource" name="memory" value="1GiB"/>
+  <policy domain="resource" name="map" value="1GiB"/>
+  <policy domain="resource" name="disk" value="1GiB"/>
+  <policy domain="resource" name="time" value="15"/>
+  <policy domain="resource" name="list-length" value="64"/>
+</policymap>

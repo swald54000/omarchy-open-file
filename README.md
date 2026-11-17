@@ -22,8 +22,8 @@ file opens in its default application. Ctrl+Enter opens its folder in Files inst
   - videos play muted, in a loop;
   - audio files play (a pre-listen), with position and duration;
   - any file: name, size, date and folder.
-- A video or an audio file only starts after the selection rests on it for 0.4 s, and
-  stops as soon as you move on or close the panel.
+- A video or an audio file only starts when you press Tab, and stops as soon as you press
+  Tab again, move on or close the panel.
 - Follows the Omarchy theme (menu colours) and language (English and French shipped).
 
 ## Keys
@@ -34,6 +34,7 @@ file opens in its default application. Ctrl+Enter opens its folder in Files inst
 | Up / Down, Page Up / Page Down | move in the list |
 | Enter, or a click | open the file |
 | Ctrl+Enter or Shift+Enter | open the file's folder in Files instead |
+| Tab | play or stop the selected video or audio file |
 | Backspace, Ctrl+Backspace, Ctrl+U | edit the search |
 | Escape | clear the search, then close |
 
@@ -41,9 +42,12 @@ file opens in its default application. Ctrl+Enter opens its folder in Files inst
 
 - Omarchy with the Quickshell-based shell (Quattro).
 - For previews, all optional — a missing tool only means a missing thumbnail:
-  - `libvips` (`vipsthumbnail`) or `imagemagick` for images, plus `libheif` for HEIC/AVIF;
+  - `libvips` (`vipsthumbnail`) or `imagemagick` for images, plus `libheif` for HEIC/AVIF
+    (JPEG XL needs `imagemagick`);
+  - `librsvg` (`rsvg-convert`) for SVG;
   - `poppler` (`pdftoppm`) for PDFs;
   - `ffmpegthumbnailer` for video thumbnails;
+  - `bubblewrap` (`bwrap`) to sandbox the thumbnail tools;
   - `qt6-multimedia` and `qt6-multimedia-ffmpeg` for video and audio playback in the panel.
 
 ## Install
@@ -73,7 +77,16 @@ Games
 Sources/linux
 ```
 
-Thumbnails are cached in `~/.cache/swald.files` and dropped after 30 days.
+Thumbnails are cached in `~/.cache/swald.files`, readable by you only, and dropped after
+30 days.
+
+Previews are made from files of any origin as soon as a row is selected, so the image tools
+are restricted: ImageMagick follows `magick/policy.xml` (expected image formats only, no
+external program such as Ghostscript) and libvips runs without its untrusted loaders.
+When `bwrap` is available, every thumbnail tool also runs in a sandbox: no network, and of
+your home folder only the file being previewed (read-only) and the thumbnail cache. Without
+it the tools run unsandboxed. Video and audio are played by the shell itself, outside any
+sandbox, which is why nothing plays until you press Tab.
 
 ## Remove
 
