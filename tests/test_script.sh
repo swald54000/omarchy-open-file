@@ -78,6 +78,19 @@ verifier "apercu : cache réservé à l'utilisateur" test "$(stat -c '%a' "$XDG_
 verifier "apercu : miniatures réservées à l'utilisateur" test -z "$(find "$XDG_CACHE_HOME/swald.files" -type f -perm /077)"
 verifier "apercu : aucun fichier provisoire laissé" test -z "$(find "$XDG_CACHE_HOME/swald.files" -name '.*' -type f)"
 
+# Après une mise à jour, les miniatures d'une version précédente restent dans un cache
+# ouvert : il est refermé dès la liste, et par un aperçu qui ne fabrique rien.
+mode_cache() { stat -c '%a' "$XDG_CACHE_HOME/swald.files"; }
+chmod 755 "$XDG_CACHE_HOME/swald.files"
+"$script" --list >/dev/null
+verifier "liste : referme un cache laissé ouvert" test "$(mode_cache)" = "700"
+chmod 755 "$XDG_CACHE_HOME/swald.files"
+"$script" --preview "$maison/Downloads/page.pdf" >/dev/null
+verifier "apercu : miniature déjà faite → cache refermé" test "$(mode_cache)" = "700"
+chmod 755 "$XDG_CACHE_HOME/swald.files"
+"$script" --preview "$maison/Downloads/notes.txt" >/dev/null
+verifier "apercu : fichier sans aperçu → cache refermé" test "$(mode_cache)" = "700"
+
 # Un PostScript ou un PDF déguisé en image ne doit lancer aucun programme externe.
 espion="$maison/.espion"
 mkdir -p "$espion"

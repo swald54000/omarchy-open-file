@@ -83,8 +83,13 @@ liste() {
     done <"$fichier_exclusions"
   fi
 
-  # Les miniatures de plus d'un mois sont refaites à la demande.
-  [[ -d $cache ]] && find "$cache" -type f -mtime +30 -delete 2>/dev/null &
+  if [[ -d $cache ]]; then
+    # Le cache d'une version précédente a pu rester ouvert aux autres utilisateurs : il
+    # est refermé dès l'ouverture du lanceur, sans attendre une nouvelle miniature.
+    chmod 700 "$cache" 2>/dev/null || true
+    # Les miniatures de plus d'un mois sont refaites à la demande.
+    find "$cache" -type f -mtime +30 -delete 2>/dev/null &
+  fi
 
   cd "$HOME"
   # find sort en erreur dès qu'un dossier est illisible : la liste reste bonne.
@@ -135,6 +140,13 @@ apercu() {
   local fichier=$1 cle miniature provisoire
   [[ -f $fichier && -r $fichier ]] || return 0
 
+  # Une miniature montre le contenu du fichier : le cache reste fermé aux autres
+  # utilisateurs, y compris s'il a été créé ouvert par une version précédente, et avant
+  # même de resservir une miniature déjà faite.
+  umask 077
+  mkdir -p "$cache"
+  chmod 700 "$cache" || return 0
+
   # La clé change avec le contenu : un fichier modifié reçoit une nouvelle miniature.
   cle=$(stat -c '%n|%Y|%s' -- "$fichier" | sha256sum | cut -d' ' -f1)
   miniature="$cache/$cle.png"
@@ -143,11 +155,6 @@ apercu() {
     return 0
   fi
 
-  # Une miniature montre le contenu du fichier : le cache reste fermé aux autres
-  # utilisateurs, y compris s'il a été créé ouvert par une version précédente.
-  umask 077
-  mkdir -p "$cache"
-  chmod 700 "$cache" || return 0
   cloisonner "$fichier"
   provisoire="$cache/.$cle.$$.png"
   if fabriquer "$fichier" "$provisoire" >/dev/null 2>&1 && [[ -s $provisoire ]]; then
